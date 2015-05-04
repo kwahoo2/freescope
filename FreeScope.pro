@@ -22,3 +22,6 @@ HEADERS  += mainwindow.h \
     serialreader.h
 
 FORMS    += mainwindow.ui
+
+
+CONFIG += c++11

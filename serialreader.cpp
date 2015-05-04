@@ -33,7 +33,7 @@ bool SerialReader::isStopped()
 void SerialReader::run()
 {
     struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC, &start);
+    clock_gettime(CLOCK_MONOTONIC, &start); //TODO: x (time) axis issues
     uint i = 0;
 
     while(!stop)
@@ -66,7 +66,7 @@ SerialReader::dataItem SerialReader::readBufAt(int val)
 
 uint SerialReader::dummySerial()
 {
-    QThread::msleep(50);
+    QThread::msleep(5);
     uint random = rand() % 1024;
     return random;
 }
@@ -93,13 +93,14 @@ void BufEmiter::setRun()
             stop = false;
         }
         start(LowPriority);
-        qDebug() << "Serial read thread started";
+        qDebug() << "Serial emiter thread started";
     }
 }
 
 void BufEmiter::setStop()
 {
     stop = true;
+    mySerialReader->setStop();
 }
 
 bool BufEmiter::isStopped()
@@ -110,23 +111,27 @@ bool BufEmiter::isStopped()
 void BufEmiter::run()
 {
     mySerialReader->setRun(); //thread reading serial
-
     int i = 0;
-    SerialReader::dataItem data; //structure from inside class
-    double oldTime = 0;
+    //double oldTime;
+    std::unique_ptr<double> oldT(new double);
+    *oldT = 0;
+
     while (!stop)
     {
         data = mySerialReader->readBufAt(i);
-        if (oldTime <= data.readTime)
+        //qDebug() << data.readTime << "...old" << *oldT;
+        if (*oldT < data.readTime)
         {
-            qDebug() << data.readTime << "   " << data.readVal << "  " << i;
-
-            emit emitData(data.readTime,
+            if ((i % 16) == 0) //60 fps update
+            {
+                qDebug() << data.readTime << "   " << data.readVal << "  " << i;
+                emit emitData(data.readTime,
                           data.readVal);
-
-            oldTime = data.readTime;
-        QThread::msleep(16); //60 fps update
+            }
+            *oldT = data.readTime;
+            QThread::msleep(1);
         }
+
         i++;
 
         if (i > (mySerialReader->bufsize)) i = 0; //circular buffer

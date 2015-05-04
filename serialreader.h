@@ -4,7 +4,9 @@
 #include <QObject>
 #include <QThread>
 #include <QDebug>
+#include <QMutex>
 #include <ctime>
+#include <memory> //needed for RAII (unique_ptr)
 
 using namespace std;
 
@@ -13,7 +15,7 @@ class SerialReader : public QThread
     Q_OBJECT
 public:
     explicit SerialReader(QObject *parent = 0);
-    static const int bufsize = 500;
+    static const int bufsize = 100;
     struct dataItem
     {
         uint readVal;
@@ -66,6 +68,9 @@ private:
     bool stop;
     ~BufEmiter();
     SerialReader *mySerialReader;
+    SerialReader::dataItem data; //structure from inside class
+    QMutex mutex;
+
 
 public slots:
 };
