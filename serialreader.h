@@ -41,6 +41,7 @@ public slots:
     void setRun();
     void setStop();
     dataItem readBufAt(int val);
+    void clearBuf();
 
 };
 /*buffer emiter thread

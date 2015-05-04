@@ -64,6 +64,17 @@ SerialReader::dataItem SerialReader::readBufAt(int val)
     return dataBuf[val];
 }
 
+void SerialReader::clearBuf()
+{
+    for (int n = 0; n < bufsize; n++)
+    {
+        dataBuf[n].readTime = 0;
+        dataBuf[n].readVal = 0;
+    }
+    qDebug() << "Buffer cleared";
+}
+
+
 uint SerialReader::dummySerial()
 {
     QThread::msleep(5);
@@ -110,6 +121,7 @@ bool BufEmiter::isStopped()
 
 void BufEmiter::run()
 {
+    mySerialReader->clearBuf();
     mySerialReader->setRun(); //thread reading serial
     int i = 0;
     //double oldTime;
