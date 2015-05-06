@@ -5,6 +5,7 @@
 #include <QThread>
 #include <QDebug>
 #include <QMutex>
+#include <QSerialPort>
 #include <ctime>
 #include <memory> //needed for RAII (unique_ptr)
 
@@ -18,7 +19,7 @@ public:
     static const int bufsize = 100;
     struct dataItem
     {
-        uint readVal;
+        quint16 readVal;
         double readTime;
     };
 
@@ -31,7 +32,9 @@ private:
     double t_s;
     bool stop;
     bool isStopped();
-    uint dummySerial(); //returns a random 0-1024 number
+    quint16 dummySerial(); //returns a random 0-1024 number
+    quint16 readSerial();
+    QSerialPort *serial;
     ~SerialReader();
 
     vector<dataItem> dataBuf;
