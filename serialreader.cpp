@@ -1,84 +1,101 @@
 #include "serialreader.h"
 
 SerialReader::SerialReader(QObject *parent) :
-    QThread(parent)
+    QObject(parent)
 {
-    stop = true;
     dataBuf.reserve(bufsize);
+}
+
+void SerialReader::openSerial()
+{
     serial = new QSerialPort(this);
     serial->setBaudRate(57600);
     serial->setPortName("/dev/ttyUSB0");
     serial->open(QIODevice::ReadOnly);
 
+    t_s = 0;
+    t_sum = 0;
+    dBufCounter = 0; //counter for the circular buffer
+
+    //serial->setReadBufferSize(maxBytes);
+    serial->clear();
+    QObject::connect(serial, SIGNAL(readyRead()),
+                     this, SLOT(readSerial()));
+
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
 }
 
-void SerialReader::setRun()
+void SerialReader::readSerial()
 {
-    if (!isRunning())
-    {
-        if (isStopped())
+
+        serialBuffer += serial->readAll();
+        clock_gettime(CLOCK_MONOTONIC, &end);
+
+        if (serialBuffer.size() >= maxBytes)
         {
-            stop = false;
-        }
-        start(LowPriority);
-        qDebug() << "Serial read thread started";
-    }
-}
+           // qDebug() << "Serial read... " << serialBuffer.size() << serialBuffer;
 
-void SerialReader::setStop()
-{
-    stop = true;
-}
-
-bool SerialReader::isStopped()
-{
-    return this->stop;
-}
-
-void SerialReader::run()
-{
-    struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC, &start); //TODO: x (time) axis issues
-    uint i = 0;
-
-    while(!stop)
-    {
-        //
-        //quint16 value = dummySerial();
-        //
-        //qDebug() << serial->bytesAvailable();
-        if (serial->bytesAvailable())
-        {
-            quint16 value = readSerial();
-            quint16 id = (value >> 11) & 0x7; //* 13:11 id
-            value = value & 0x3FF;
-
-            //qDebug() << "id: " << id << "value: " <<value;
-
-            dataItem dItem;
-            clock_gettime(CLOCK_MONOTONIC, &end);
+            t_sum += t_s; //cumulative time for buffer data
             t_s = (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec) / 1.0e9;
-            dItem.readTime = t_s;
-            dItem.readVal = value;
+            clock_gettime(CLOCK_MONOTONIC, &start); //get starting time for a next read
+            double dt = t_s / serialBuffer.size(); //time of a single byte read
 
-            if (id == 2) //show single channel
+            if ((quint8)serialBuffer.at(0) < 0x80) //minimal value of the first byte is 10000000, maximal of the second is 01111111
             {
-                dataBuf[i % bufsize] = dItem; //simple circular buffer implementation
-                i++;
+                serialBuffer.remove(0, 1);
             }
+            if (serialBuffer.size() % 2) //remove the last byte if buffer is even
+            {
+                serialBuffer.remove(serialBuffer.size(), 1);
+            }
+
+            for (int i = 0; i < serialBuffer.size(); i += 2)
+            {
+                quint16 data;
+                quint16 tmp = serialBuffer[i];
+                quint16 tmp2 = serialBuffer[i+1];
+                data = (tmp << 7 | tmp2); //move only for 7 places to fill bit 7  in the second byte
+                /*last 16 bits
+                 * 15 0
+                 * 14 1
+                 * 13:11 id
+                 * 9:8 data from the first byte
+                 * 7:0 data from the second byte*/
+
+                quint16 id = (data >> 11) & 0x7; // 13:11 id
+                data = data & 0x3FF; //0-1023 value
+
+                //qDebug() << "id: " << id << "value: " <<data;
+
+                dataItem dItem;
+
+                dItem.readTime = t_sum + (dt * i);
+                dItem.readVal = data;
+                dItem.readId = id;
+
+                dataBuf[dBufCounter % bufsize] = dItem; //simple circular buffer implementation
+                dBufCounter++;
+
+            }
+            serialBuffer.clear();
         }
 
-        //qDebug() << t_ns/1e9 << "  " << value;
-    }
+}
 
+void SerialReader::closeSerial()
+{
+    QObject::disconnect(serial, SIGNAL(bytesWritten(minBytes)),
+                     this, SLOT(readSerial()));
+    serial->close();
 }
 
 SerialReader::~SerialReader()
 {
-    stop = true;
+    serial->close();
 }
 
-SerialReader::dataItem SerialReader::readBufAt(int val)
+SerialReader::dataItem SerialReader::readBufAt(long val)
 {
     return dataBuf[val];
 }
@@ -89,6 +106,7 @@ void SerialReader::clearBuf()
     {
         dataBuf[n].readTime = 0;
         dataBuf[n].readVal = 0;
+        dataBuf[n].readId = 0;
     }
     qDebug() << "Buffer cleared";
 }
@@ -100,40 +118,6 @@ quint16 SerialReader::dummySerial()
     quint16 random = rand() % 1024;
     return random;
 }
-quint16 SerialReader::readSerial()
-{
-        char c;
-        quint8 tmp = 0;
-        quint8 tmp2 = 0;
-        quint16 data;
-        serial->getChar(&c);
-        tmp = (quint8)c;
-        if (tmp >= 0x80) //minimalna wartosc pierszego bajtu 10000000, maksymalna drugiego 01111111
-        {
-            serial->getChar(&c);
-            tmp2 = (quint8)c;
-        }
-        else
-        {
-            serial->getChar(&c);
-            tmp = (quint8)c;
-            serial->getChar(&c);
-            tmp2 = (quint8)c;
-        }
-
-        data = (tmp << 7 | tmp2); //przesuniecie tylko o 7 zeby wypelic pusty bit 7 w drugim bajcie
-
-        /*ostatnie 16bitów
-         * 15 0
-         * 14 1
-         * 13:11 id
-         * 9:8 dane z pierwszego bajtu
-         * 7:0 dane z drugiego bajtu*/
-
-        QThread::usleep(200); //hack
-
-        return data;
-}
 
 /*buffer emiter thread
 *
@@ -143,70 +127,66 @@ quint16 SerialReader::readSerial()
 */
 
 BufEmiter::BufEmiter(QObject *parent) :
-    QThread(parent)
+    QObject(parent)
 {
     mySerialReader = new SerialReader(this);
-    stop = true;
+    timer = new QTimer(this);
+    iBuf = 0;
 }
 
-void BufEmiter::setRun()
-{
-    if (!isRunning())
-    {
-        if (isStopped())
-        {
-            stop = false;
-        }
-        start(LowPriority);
-        qDebug() << "Serial emiter thread started";
-    }
-}
 
-void BufEmiter::setStop()
-{
-    stop = true;
-    mySerialReader->setStop();
-}
-
-bool BufEmiter::isStopped()
-{
-    return this->stop;
-}
-
-void BufEmiter::run()
+void BufEmiter::readBuffer()
 {
     mySerialReader->clearBuf();
-    mySerialReader->setRun(); //thread reading serial
-    int i = 0;
-    double oldTime;
-    //std::unique_ptr<double> oldT(new double);
-    oldTime = 0;
+    mySerialReader->openSerial(); //thread reading serial
+    connect(timer, SIGNAL(timeout()), this, SLOT(updateGraph()));
+    timer->start(16); //60 fps update
 
-    while (!stop)
+    clock_gettime(CLOCK_MONOTONIC, &start);
+}
+
+void BufEmiter::updateGraph()
+{
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    double actTime = (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec) / 1.0e9;
+    data = findData(actTime, 2);
+
+    qDebug() << data.readTime << "   " << data.readVal << "  ";
+    emit emitData(data.readTime,
+              data.readVal);
+}
+
+SerialReader::dataItem BufEmiter::findData(double t, qint8 id)
+{
+
+    SerialReader::dataItem tmpdata;
+    double error = 0.1; //maximal alloved error time
+
+    while (1)
     {
-        data = mySerialReader->readBufAt(i);
-        //qDebug() << data.readTime << "...old" << *oldT;
-        if (oldTime < data.readTime)
+        tmpdata = mySerialReader->readBufAt(iBuf);
+
+        if (id == tmpdata.readId)
         {
-            if ((i % 16) == 0) //60 fps update
+            //qDebug() << "t " << t << "readtime " <<tmpdata.readTime << "iBuf " << iBuf;
+            if ((t > tmpdata.readTime) && (t< (tmpdata.readTime + error)))
             {
-                qDebug() << data.readTime << "   " << data.readVal << "  " << i;
-                emit emitData(data.readTime,
-                          data.readVal);
+                return tmpdata;
             }
-            oldTime = data.readTime;
-            QThread::usleep(200);
         }
-
-        i++;
-
-        if (i > (mySerialReader->bufsize)) i = 0; //circular buffer
+        iBuf++;
+        if (iBuf > (mySerialReader->bufsize)) iBuf = 0; //circular buffer
     }
+}
+
+void BufEmiter::stopReadBuffer()
+{
+    disconnect(timer, SIGNAL(timeout()), this, SLOT(updateGraph()));
+    timer->stop();
 }
 
 BufEmiter::~BufEmiter()
 {
-    stop = true;
-    mySerialReader->setStop();
+
 }
 

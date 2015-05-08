@@ -6,44 +6,49 @@
 #include <QDebug>
 #include <QMutex>
 #include <QSerialPort>
+#include <QTimer>
 #include <ctime>
 #include <memory> //needed for RAII (unique_ptr)
 
 using namespace std;
 
-class SerialReader : public QThread
+class SerialReader : public QObject
 {
     Q_OBJECT
 public:
     explicit SerialReader(QObject *parent = 0);
-    static const int bufsize = 100;
+    static const long bufsize = 100000;  //big circular buffer size
     struct dataItem
     {
         quint16 readVal;
         double readTime;
+        qint8 readId;
     };
 
 protected:
-    void run();
 
 signals:
 
 private:
-    double t_s;
-    bool stop;
-    bool isStopped();
+    static const qint64 maxBytes = 90; //small buffer for serial size
+    long dBufCounter;
+    double t_s, t_sum;
+
+    struct timespec start, end;
+    QByteArray serialBuffer;
     quint16 dummySerial(); //returns a random 0-1024 number
-    quint16 readSerial();
     QSerialPort *serial;
     ~SerialReader();
 
     vector<dataItem> dataBuf;
 
+private slots:
+        void readSerial();
 
 public slots:
-    void setRun();
-    void setStop();
-    dataItem readBufAt(int val);
+    void openSerial();
+    void closeSerial();
+    dataItem readBufAt(long val);
     void clearBuf();
 
 };
@@ -52,17 +57,13 @@ public slots:
 *
 *
 */
-class BufEmiter : public QThread
+class BufEmiter : public QObject
 {
     Q_OBJECT
 public:
     explicit BufEmiter(QObject *parent = 0);
-    bool isStopped();
-    void setRun();
-    void setStop();
 
 protected:
-    void run();
 
 signals:
     void emitData(double time,
@@ -72,11 +73,20 @@ private:
     bool stop;
     ~BufEmiter();
     SerialReader *mySerialReader;
-    SerialReader::dataItem data; //structure from inside class
+    SerialReader::dataItem data, data2; //structure from inside class
+    long iBuf;
     QMutex mutex;
-
+    QTimer *timer;
+    struct timespec start, end;
 
 public slots:
+    void readBuffer();
+    void stopReadBuffer();
+
+private slots:
+    SerialReader::dataItem findData(double t, qint8 id);
+    void updateGraph();
+
 };
 
 #endif // SERIALREADER_H

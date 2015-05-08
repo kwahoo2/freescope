@@ -30,16 +30,12 @@ void MainWindow::setupPlot()
 
 void MainWindow::on_pushButton_2_clicked()
 {
-    if (myBufEmiter->isRunning())
-    {
-        myBufEmiter->setStop();
-    }
-    else
-    {
-        myBufEmiter->setRun();
-        QObject::connect(myBufEmiter, SIGNAL(emitData(double,int)),
-                         this, SLOT(updateGraphs(double,int)));
-    }
+
+
+    myBufEmiter->readBuffer();
+    QObject::connect(myBufEmiter, SIGNAL(emitData(double,int)),
+                     this, SLOT(updateGraphs(double,int)));
+
 }
 
 void MainWindow::updateGraphs(double t,
