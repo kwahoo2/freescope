@@ -18,6 +18,7 @@ class SerialReader : public QObject
 public:
     explicit SerialReader(QObject *parent = 0);
     static const long bufsize = 100000;  //big circular buffer size
+    long eBufCounter; //earlier cycle buffer write pos
     struct dataItem
     {
         quint16 readVal;
@@ -38,6 +39,7 @@ private:
     QByteArray serialBuffer;
     quint16 dummySerial(); //returns a random 0-1024 number
     QSerialPort *serial;
+    QMutex mutex;
     ~SerialReader();
 
     vector<dataItem> dataBuf;
@@ -74,7 +76,6 @@ private:
     ~BufEmiter();
     SerialReader *mySerialReader;
     SerialReader::dataItem data, data2; //structure from inside class
-    long iBuf;
     QMutex mutex;
     QTimer *timer;
     struct timespec start, end;

@@ -10,12 +10,15 @@ void SerialReader::openSerial()
 {
     serial = new QSerialPort(this);
     serial->setBaudRate(57600);
+    serial->setParity(QSerialPort::NoParity);
+    serial->setStopBits(QSerialPort::OneStop);
     serial->setPortName("/dev/ttyUSB0");
     serial->open(QIODevice::ReadOnly);
 
     t_s = 0;
     t_sum = 0;
     dBufCounter = 0; //counter for the circular buffer
+    eBufCounter = 0;
 
     //serial->setReadBufferSize(maxBytes);
     serial->clear();
@@ -34,12 +37,14 @@ void SerialReader::readSerial()
 
         if (serialBuffer.size() >= maxBytes)
         {
+           mutex.lock();
            // qDebug() << "Serial read... " << serialBuffer.size() << serialBuffer;
 
             t_sum += t_s; //cumulative time for buffer data
             t_s = (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec) / 1.0e9;
             clock_gettime(CLOCK_MONOTONIC, &start); //get starting time for a next read
             double dt = t_s / serialBuffer.size(); //time of a single byte read
+            dataItem dItem;
 
             if ((quint8)serialBuffer.at(0) < 0x80) //minimal value of the first byte is 10000000, maximal of the second is 01111111
             {
@@ -50,12 +55,15 @@ void SerialReader::readSerial()
                 serialBuffer.remove(serialBuffer.size(), 1);
             }
 
+            long tmpBufCounter = dBufCounter; //avoid overwriting variable
+
             for (int i = 0; i < serialBuffer.size(); i += 2)
             {
                 quint16 data;
-                quint16 tmp = serialBuffer[i];
-                quint16 tmp2 = serialBuffer[i+1];
+                quint8 tmp = serialBuffer[i];
+                quint8 tmp2 = serialBuffer[i+1];
                 data = (tmp << 7 | tmp2); //move only for 7 places to fill bit 7  in the second byte
+                //qDebug() << "TMP " << tmp << "TMP2 " << tmp2 << "DATA " <<data;
                 /*last 16 bits
                  * 15 0
                  * 14 1
@@ -68,8 +76,6 @@ void SerialReader::readSerial()
 
                 //qDebug() << "id: " << id << "value: " <<data;
 
-                dataItem dItem;
-
                 dItem.readTime = t_sum + (dt * i);
                 dItem.readVal = data;
                 dItem.readId = id;
@@ -77,8 +83,10 @@ void SerialReader::readSerial()
                 dataBuf[dBufCounter % bufsize] = dItem; //simple circular buffer implementation
                 dBufCounter++;
 
-            }
+            } 
+            eBufCounter = (tmpBufCounter % bufsize);
             serialBuffer.clear();
+            mutex.unlock();
         }
 
 }
@@ -131,7 +139,6 @@ BufEmiter::BufEmiter(QObject *parent) :
 {
     mySerialReader = new SerialReader(this);
     timer = new QTimer(this);
-    iBuf = 0;
 }
 
 
@@ -151,7 +158,7 @@ void BufEmiter::updateGraph()
     double actTime = (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec) / 1.0e9;
     data = findData(actTime, 2);
 
-    qDebug() << data.readTime << "   " << data.readVal << "  ";
+    //qDebug() << data.readTime << "   " << data.readVal << "  ";
     emit emitData(data.readTime,
               data.readVal);
 }
@@ -160,17 +167,17 @@ SerialReader::dataItem BufEmiter::findData(double t, qint8 id)
 {
 
     SerialReader::dataItem tmpdata;
-    double error = 0.1; //maximal alloved error time
-
+    long iBuf = mySerialReader->eBufCounter; //get start position
     while (1)
     {
         tmpdata = mySerialReader->readBufAt(iBuf);
 
         if (id == tmpdata.readId)
         {
-            //qDebug() << "t " << t << "readtime " <<tmpdata.readTime << "iBuf " << iBuf;
-            if ((t > tmpdata.readTime) && (t< (tmpdata.readTime + error)))
+            if (t > tmpdata.readTime)
             {
+                //qDebug() << "t " << t << "readtime " <<tmpdata.readTime << "iBuf " << iBuf;
+
                 return tmpdata;
             }
         }
