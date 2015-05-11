@@ -15,8 +15,7 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     qcustomplot.cpp \
-    serialreader.cpp \
-    avr/scope.c
+    serialreader.cpp
 
 HEADERS  += mainwindow.h \
     qcustomplot.h \

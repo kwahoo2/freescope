@@ -23,10 +23,9 @@ ISR(ADC_vect)
 /*When ADCL is read, the ADC Data Register is not updated until ADCH is read. Consequently, if
 the result is left adjusted and no more than 8-bit precision is required, it is sufficient to read
 ADCH. Otherwise, ADCL must be read first, then ADCH.*/
-    
     data[1] = ADCL;
     data[0] = (ADCH << 1) | 0b10000000; //dwa najmniej znaczace bity z adch sa używane i przesuniete o jeden w lewo by zrobic miejsce na bit 7 z adcl, bit 7 zawsze 1
-    
+
     data[0] = data[0] | ((data[1] & 0b10000000) >> 7); //bit 7 przerzucony do data[0]
     data[0] = data[0] | ((adcnum & 0b00000111) << 4); //bity 6:4 maja byc id
     data[1] = data[1] & 0b01111111; // data[1]zawsze rozpoczynany 0
@@ -34,7 +33,7 @@ ADCH. Otherwise, ADCL must be read first, then ADCH.*/
     if (adcnum > 7) adcnum = 0;
 
     ADMUX = adcnum | (1<<REFS0); //REFS0 odniesienie do napiecia zasilanie
-	ADCSRA = _BV(ADEN)|_BV(ADIE)|_BV(ADSC)|_BV(ADPS2)|_BV(ADPS1); 
+    ADCSRA = _BV(ADEN)|_BV(ADIE)|_BV(ADSC)|_BV(ADPS2)|_BV(ADPS1);
 } 
 
 void USART_Init(uint8_t ubrr)
@@ -74,10 +73,12 @@ int main(void)
     while (1)
     {   
         uint8_t d;
+        cli();
         for (d = 0; d < 2; ++d)
         { 
             USART_Transmit(data[d]);
         }
+        sei();
     }	
     return 0;
 }
