@@ -27,6 +27,8 @@ void SerialReader::openSerial()
 
 
     clock_gettime(CLOCK_MONOTONIC, &start);
+
+
 }
 
 void SerialReader::readSerial()
@@ -93,7 +95,7 @@ void SerialReader::readSerial()
 
 void SerialReader::closeSerial()
 {
-    QObject::disconnect(serial, SIGNAL(bytesWritten(minBytes)),
+    QObject::disconnect(serial, SIGNAL(readyRead()),
                      this, SLOT(readSerial()));
     serial->close();
 }
@@ -127,6 +129,11 @@ quint16 SerialReader::dummySerial()
     return random;
 }
 
+bool SerialReader::isOpened()
+{
+    return serial->isOpen();
+}
+
 /*buffer emiter thread
 *
 *
@@ -139,6 +146,7 @@ BufEmiter::BufEmiter(QObject *parent) :
 {
     mySerialReader = new SerialReader(this);
     timer = new QTimer(this);
+    started = false;
 }
 
 
@@ -146,24 +154,32 @@ void BufEmiter::readBuffer()
 {
     mySerialReader->clearBuf();
     mySerialReader->openSerial(); //thread reading serial
-    connect(timer, SIGNAL(timeout()), this, SLOT(updateGraph()));
-    timer->start(16); //60 fps update
+    if (mySerialReader->isOpened())
+    {
+        connect(timer, SIGNAL(timeout()), this, SLOT(updateGraph()));
+        timer->start(16); //60 fps update
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
+        clock_gettime(CLOCK_MONOTONIC, &start);
+        started = true;
+    }
+    else
+    {
+        started = false;
+    }
 }
 
 void BufEmiter::updateGraph()
 {
     clock_gettime(CLOCK_MONOTONIC, &end);
     double actTime = (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec) / 1.0e9;
-    data = findData(actTime, 2);
+    data = findData(actTime, 1); //1 external test, 2 potentiomer test
 
     //qDebug() << data.readTime << "   " << data.readVal << "  ";
     emit emitData(data.readTime,
               data.readVal);
 }
 
-SerialReader::dataItem BufEmiter::findData(double t, qint8 id)
+SerialReader::dataItem BufEmiter::findData(const double t, const qint8 id)
 {
 
     SerialReader::dataItem tmpdata;
@@ -190,6 +206,13 @@ void BufEmiter::stopReadBuffer()
 {
     disconnect(timer, SIGNAL(timeout()), this, SLOT(updateGraph()));
     timer->stop();
+    mySerialReader->closeSerial();
+    started = false;
+}
+
+bool BufEmiter::isStarted()
+{
+    return started;
 }
 
 BufEmiter::~BufEmiter()

@@ -19,6 +19,7 @@ public:
     explicit SerialReader(QObject *parent = 0);
     static const long bufsize = 100000;  //big circular buffer size
     long eBufCounter; //earlier cycle buffer write pos
+    bool isOpened();
     struct dataItem
     {
         quint16 readVal;
@@ -64,15 +65,17 @@ class BufEmiter : public QObject
     Q_OBJECT
 public:
     explicit BufEmiter(QObject *parent = 0);
+    bool isStarted();
 
 protected:
 
 signals:
-    void emitData(double time,
-               int value);
+    void emitData(const double time,
+               const int value);
 
 private:
     bool stop;
+    bool started;
     ~BufEmiter();
     SerialReader *mySerialReader;
     SerialReader::dataItem data, data2; //structure from inside class
@@ -85,7 +88,7 @@ public slots:
     void stopReadBuffer();
 
 private slots:
-    SerialReader::dataItem findData(double t, qint8 id);
+    SerialReader::dataItem findData(const double t, const qint8 id);
     void updateGraph();
 
 };

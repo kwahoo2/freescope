@@ -31,10 +31,20 @@ void MainWindow::setupPlot()
 void MainWindow::on_pushButton_2_clicked()
 {
 
-
+    if(!(myBufEmiter->isStarted()))
+    {
     myBufEmiter->readBuffer();
     QObject::connect(myBufEmiter, SIGNAL(emitData(double,int)),
                      this, SLOT(updateGraphs(double,int)));
+        if (myBufEmiter->isStarted()) ui->pushButton_2->setText(tr("Started"));
+    }
+    else
+    {
+        myBufEmiter->stopReadBuffer();
+        QObject::disconnect(myBufEmiter, SIGNAL(emitData(double,int)),
+                         this, SLOT(updateGraphs(double,int)));
+        ui->pushButton_2->setText(tr("Stopped"));
+    }
 
 }
 
