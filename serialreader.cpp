@@ -172,11 +172,20 @@ void BufEmiter::updateGraph()
 {
     clock_gettime(CLOCK_MONOTONIC, &end);
     double actTime = (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec) / 1.0e9;
-    data = findData(actTime, 1); //1 external test, 2 potentiomer test
+
+    vector<double> rTime(8);
+    vector<int> rVal(8);
+
+    for (int id = 0; id < 8; id++)
+    {
+        data = findData(actTime, id); //1 external test, 2 potentiomer test
+        rTime[id] = data.readTime;
+        rVal[id] = data.readVal;
+    }
 
     //qDebug() << data.readTime << "   " << data.readVal << "  ";
-    emit emitData(data.readTime,
-              data.readVal);
+    emit emitData(rTime,
+                  rVal);
 }
 
 SerialReader::dataItem BufEmiter::findData(const double t, const qint8 id)

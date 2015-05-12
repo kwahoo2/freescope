@@ -23,8 +23,8 @@ public:
 
 private slots:
     void on_pushButton_2_clicked();
-    void updateGraphs(double t,
-                      int val);
+    void updateGraphs(const vector<double> t,
+                      const vector<int> val);
 
 private:
     Ui::MainWindow *ui;

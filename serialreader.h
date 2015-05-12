@@ -70,8 +70,8 @@ public:
 protected:
 
 signals:
-    void emitData(const double time,
-               const int value);
+    void emitData(const vector<double> time,
+               const vector<int> value);
 
 private:
     bool stop;
