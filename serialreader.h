@@ -38,7 +38,6 @@ private:
 
     struct timespec start, end;
     QByteArray serialBuffer;
-    quint16 dummySerial(); //returns a random 0-1024 number
     QSerialPort *serial;
     QMutex mutex;
     ~SerialReader();

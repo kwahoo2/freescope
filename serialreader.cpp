@@ -122,13 +122,6 @@ void SerialReader::clearBuf()
 }
 
 
-quint16 SerialReader::dummySerial()
-{
-    QThread::msleep(5);
-    quint16 random = rand() % 1024;
-    return random;
-}
-
 bool SerialReader::isOpened()
 {
     return serial->isOpen();
@@ -181,9 +174,9 @@ void BufEmiter::updateGraph()
         data = findData(actTime, id); //1 external test, 2 potentiomer test
         rTime[id] = data.readTime;
         rVal[id] = data.readVal;
+
     }
 
-    //qDebug() << data.readTime << "   " << data.readVal << "  ";
     emit emitData(rTime,
                   rVal);
 }
@@ -226,6 +219,6 @@ bool BufEmiter::isStarted()
 
 BufEmiter::~BufEmiter()
 {
-
+    mySerialReader->closeSerial();
 }
 

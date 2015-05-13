@@ -71,12 +71,12 @@ void MainWindow::on_pushButton_2_clicked()
 void MainWindow::updateGraphs(const vector<double> t,
                               const vector<int> val)
 {
-    for (int i = 1; i < 6; i++) //set 1-6 for manual testing
+    for (int i = 0; i < 8; i++) //set 1-6 for manual testing
     {
         double valD = static_cast<double> (val[i]);
-        //qDebug() << val[i];
         ui->plot->graph(i)->addData(t[i], valD);
         ui->plot->graph(i)->rescaleValueAxis();
+        //qDebug() << i << "  " << t[i] << "   " << valD << "  ";
 
     }
 
