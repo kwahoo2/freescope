@@ -26,6 +26,22 @@ private slots:
     void updateGraphs(const vector<double> t,
                       const vector<int> val);
 
+    void on_checkBoxCh0_clicked(bool checked);
+
+    void on_checkBoxCh1_clicked(bool checked);
+
+    void on_checkBoxCh2_clicked(bool checked);
+
+    void on_checkBoxCh3_clicked(bool checked);
+
+    void on_checkBoxCh4_clicked(bool checked);
+
+    void on_checkBoxCh5_clicked(bool checked);
+
+    void on_checkBoxCh6_clicked(bool checked);
+
+    void on_checkBoxCh7_clicked(bool checked);
+
 private:
     Ui::MainWindow *ui;
     BufEmiter *myBufEmiter;

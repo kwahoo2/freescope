@@ -137,6 +137,7 @@ bool SerialReader::isOpened()
 BufEmiter::BufEmiter(QObject *parent) :
     QObject(parent)
 {
+    activeCh = 0xFF;
     mySerialReader = new SerialReader(this);
     timer = new QTimer(this);
     started = false;
@@ -171,9 +172,12 @@ void BufEmiter::updateGraph()
 
     for (int id = 0; id < 8; id++)
     {
-        data = findData(actTime, id); //1 external test, 2 potentiomer test
-        rTime[id] = data.readTime;
-        rVal[id] = data.readVal;
+        if (activeCh & (1 << id))
+        {
+            data = findData(actTime, id); //1 external test, 2 potentiomer test
+            rTime[id] = data.readTime;
+            rVal[id] = data.readVal;
+        }
 
     }
 
@@ -210,6 +214,18 @@ void BufEmiter::stopReadBuffer()
     timer->stop();
     mySerialReader->closeSerial();
     started = false;
+}
+
+void BufEmiter::enableCh(const int val)
+{
+   activeCh |= (1 << val);
+   qDebug() << "Channel " << val << "enabled";
+}
+
+void BufEmiter::disableCh(const int val)
+{
+   activeCh &= ~(1 << val);
+   qDebug() << "Channel " << val << "disabled";
 }
 
 bool BufEmiter::isStarted()

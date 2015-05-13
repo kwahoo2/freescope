@@ -8,7 +8,7 @@
 #include <QSerialPort>
 #include <QTimer>
 #include <ctime>
-#include <memory> //needed for RAII (unique_ptr)
+//#include <memory> //needed for RAII (unique_ptr)
 
 using namespace std;
 
@@ -65,6 +65,7 @@ class BufEmiter : public QObject
 public:
     explicit BufEmiter(QObject *parent = 0);
     bool isStarted();
+    qint8 activeCh; //binary number representing active channels, used becasue future uC communication
 
 protected:
 
@@ -85,6 +86,8 @@ private:
 public slots:
     void readBuffer();
     void stopReadBuffer();
+    void enableCh(const int val);
+    void disableCh(const int val);
 
 private slots:
     SerialReader::dataItem findData(const double t, const qint8 id);

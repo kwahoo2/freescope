@@ -8,6 +8,7 @@ MainWindow::MainWindow(QWidget *parent) :
     myBufEmiter = new BufEmiter(this);
     ui->setupUi(this);
     setupPlot();
+
 }
 
 MainWindow::~MainWindow()
@@ -73,13 +74,113 @@ void MainWindow::updateGraphs(const vector<double> t,
 {
     for (int i = 0; i < 8; i++) //set 1-6 for manual testing
     {
-        double valD = static_cast<double> (val[i]);
-        ui->plot->graph(i)->addData(t[i], valD);
-        ui->plot->graph(i)->rescaleValueAxis();
+        if ((myBufEmiter->activeCh) & (1 << i))
+        {
+            double valD = static_cast<double> (val[i]);
+            ui->plot->graph(i)->addData(t[i], valD);
+            ui->plot->graph(i)->rescaleValueAxis();
+            ui->plot->xAxis->setRange(t[i]+0.25, 3, Qt::AlignRight);
+        }
         //qDebug() << i << "  " << t[i] << "   " << valD << "  ";
 
     }
 
-    ui->plot->xAxis->setRange(t[2]+0.25, 3, Qt::AlignRight); //use PC1 signal as a base for timing
+
     ui->plot->replot();
+}
+
+void MainWindow::on_checkBoxCh0_clicked(bool checked)
+{
+    if (checked)
+    {
+        myBufEmiter->enableCh(0);
+    }
+    else
+    {
+        myBufEmiter->disableCh(0);
+    }
+}
+
+void MainWindow::on_checkBoxCh1_clicked(bool checked)
+{
+    if (checked)
+    {
+        myBufEmiter->enableCh(1);
+    }
+    else
+    {
+        myBufEmiter->disableCh(1);
+    }
+}
+
+void MainWindow::on_checkBoxCh2_clicked(bool checked)
+{
+    if (checked)
+    {
+        myBufEmiter->enableCh(2);
+    }
+    else
+    {
+        myBufEmiter->disableCh(2);
+    }
+}
+
+void MainWindow::on_checkBoxCh3_clicked(bool checked)
+{
+    if (checked)
+    {
+        myBufEmiter->enableCh(3);
+    }
+    else
+    {
+        myBufEmiter->disableCh(3);
+    }
+}
+
+void MainWindow::on_checkBoxCh4_clicked(bool checked)
+{
+    if (checked)
+    {
+        myBufEmiter->enableCh(4);
+    }
+    else
+    {
+        myBufEmiter->disableCh(4);
+    }
+}
+
+void MainWindow::on_checkBoxCh5_clicked(bool checked)
+{
+    if (checked)
+    {
+        myBufEmiter->enableCh(5);
+    }
+    else
+    {
+        myBufEmiter->disableCh(5);
+    }
+}
+
+void MainWindow::on_checkBoxCh6_clicked(bool checked)
+{
+    if (checked)
+    {
+        myBufEmiter->enableCh(6);
+    }
+    else
+    {
+        myBufEmiter->disableCh(6);
+    }
+}
+
+void MainWindow::on_checkBoxCh7_clicked(bool checked)
+{
+    if (checked)
+    {
+        myBufEmiter->enableCh(7);
+    }
+    else
+    {
+        myBufEmiter->disableCh(7);
+    }
 }
