@@ -7,6 +7,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     myBufEmiter = new BufEmiter(this);
     ui->setupUi(this);
+    ui->tableWidget->setRowCount(8);
+    ui->tableWidget->setColumnCount(5);
     setupPlot();
 
 }
@@ -39,8 +41,8 @@ void MainWindow::setupPlot()
     ui->plot->addGraph();
     ui->plot->graph(7)->setPen(QPen(Qt::darkRed));
 
-    ui->plot->xAxis->setLabel("x");
-    ui->plot->yAxis->setLabel("y");
+    ui->plot->xAxis->setLabel("t");
+    ui->plot->yAxis->setLabel("V");
 
 }
 
