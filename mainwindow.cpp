@@ -7,9 +7,13 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     myBufEmiter = new BufEmiter(this);
     ui->setupUi(this);
-    ui->tableWidget->setRowCount(8);
-    ui->tableWidget->setColumnCount(5);
     setupPlot();
+    triggerEnabled =  false;
+    triggerCh = 0;
+    triggerLevel = 0;
+    fallingEdge = false;
+    risingEdge = false;
+    timer = new QTimer(this);
 
 }
 
@@ -53,15 +57,22 @@ void MainWindow::on_pushButton_2_clicked()
     if(!(myBufEmiter->isStarted()))
     {
     myBufEmiter->readBuffer();
-    QObject::connect(myBufEmiter, SIGNAL(emitData(const vector <double>,
+    if (!triggerEnabled)
+    {
+        QObject::connect(timer, SIGNAL(timeout()), this, SLOT(refreshGraphs()));
+        timer->start(16); //60 fps update
+    }
+    QObject::connect(myBufEmiter, SIGNAL(emitData(const vector <double>, //varaible time update
                                                      const vector<int>)),
-                     this, SLOT(updateGraphs(const vector<double>,
+                     this, SLOT(updateGraphsData(const vector<double>,
                                              const vector<int>)));
         if (myBufEmiter->isStarted()) ui->pushButton_2->setText(tr("Started"));
     }
     else
     {
         myBufEmiter->stopReadBuffer();
+        QObject::disconnect(timer, SIGNAL(timeout()), this, SLOT(refreshGraphs()));
+        timer->stop();
         QObject::disconnect(myBufEmiter, SIGNAL(emitData(const vector <double>,
                                                          const vector<int>)),
                          this, SLOT(updateGraphs(const vector<double>,
@@ -71,14 +82,22 @@ void MainWindow::on_pushButton_2_clicked()
 
 }
 
-void MainWindow::updateGraphs(const vector<double> t,
+void MainWindow::updateGraphsData(const vector<double> t,
                               const vector<int> val)
 {
-    for (int i = 0; i < 8; i++) //set 1-6 for manual testing
+    double valNew = 0;
+    double valOld = 0;
+    for (int i = 0; i < 8; i++)
     {
         if ((myBufEmiter->activeCh) & (1 << i))
         {
             double valD = static_cast<double> (val[i]);
+            if (triggerEnabled && (triggerCh == i))
+            {
+                valNew = valD;
+                checkIfTriggered(valNew, valOld);
+                valOld = valNew;
+            }
             ui->plot->graph(i)->addData(t[i], valD);
             ui->plot->graph(i)->rescaleValueAxis();
             ui->plot->xAxis->setRange(t[i]+0.25, 3, Qt::AlignRight);
@@ -86,9 +105,30 @@ void MainWindow::updateGraphs(const vector<double> t,
         //qDebug() << i << "  " << t[i] << "   " << valD << "  ";
 
     }
+}
 
-
+void MainWindow::refreshGraphs()
+{
     ui->plot->replot();
+}
+
+void MainWindow::checkIfTriggered(const double valNew, const double valOld)
+{
+    if (risingEdge)
+    {
+        if ((triggerLevel < valNew) && (triggerLevel > valOld))
+        {
+            this->refreshGraphs();
+        }
+    }
+    if (fallingEdge)
+    {
+        if ((triggerLevel < valOld) && (triggerLevel > valNew))
+        {
+            this->refreshGraphs();
+        }
+    }
+
 }
 
 void MainWindow::on_checkBoxCh0_clicked(bool checked)

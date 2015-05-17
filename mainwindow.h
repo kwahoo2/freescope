@@ -4,8 +4,10 @@
 #include <QMainWindow>
 #include <QDebug>
 #include <QThread>
+#include <QTime>
 #include "qcustomplot.h"
 #include "serialreader.h"
+
 
 namespace Ui {
 class MainWindow;
@@ -23,8 +25,11 @@ public:
 
 private slots:
     void on_pushButton_2_clicked();
-    void updateGraphs(const vector<double> t,
+    void updateGraphsData(const vector<double> t,
                       const vector<int> val);
+
+    void refreshGraphs();
+    void checkIfTriggered(const double valNew, const double valOld);
 
     void on_checkBoxCh0_clicked(bool checked);
 
@@ -45,6 +50,11 @@ private slots:
 private:
     Ui::MainWindow *ui;
     BufEmiter *myBufEmiter;
+    QTimer *timer;
+    bool triggerEnabled;
+    double triggerLevel;
+    bool fallingEdge, risingEdge;
+    int triggerCh;
 
 };
 
