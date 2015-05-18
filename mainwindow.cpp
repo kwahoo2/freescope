@@ -121,12 +121,14 @@ void MainWindow::updateGraphsData(const vector<double> t,
     if (!triggerEnabled)
     {
         refreshGraphs();
+        refreshSpreadSheet();
     }
     else
     {
         if (isTriggered)
         {
             refreshGraphs();
+            refreshSpreadSheet();
         }
     }
 
