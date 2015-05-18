@@ -13,11 +13,17 @@ MainWindow::MainWindow(QWidget *parent) :
     triggerLevel = 0;
     fallingEdge = false;
     risingEdge = false;
-    //refreshTimer = new QTimer(this);
+    chIn = {0, 0, 0, 0,
+          0, 0, 0, 0};
+    chOut = {0, 0, 0, 0,
+          0, 0, 0, 0};
+    engine = new QScriptEngine;
 }
 
 MainWindow::~MainWindow()
 {
+    delete engine;
+    delete iCell;
     delete ui;
 }
 void MainWindow::setupPlot()
@@ -85,6 +91,9 @@ void MainWindow::updateGraphsData(const vector<double> t,
         if ((myBufEmiter->activeCh) & (1 << i))
         {
             double valD = static_cast<double> (val[i]);
+            iCell = new QTableWidgetItem;
+            iCell->setText((QString::number(valD))); // fill the spreadsheet
+            ui->tableWidget->setItem(i, 0, iCell);
             if (triggerEnabled && (triggerCh == i))
             {
                 valNew = valD;
@@ -98,6 +107,8 @@ void MainWindow::updateGraphsData(const vector<double> t,
         //qDebug() << i << "  " << t[i] << "   " << valD << "  ";
 
     }
+    updateSpreadSheet();
+
     if (!triggerEnabled)
     {
         refreshGraphs();
@@ -136,7 +147,46 @@ bool MainWindow::checkIfTriggered(const double valNew, const double valOld)
     }
     return false;
 }
+void MainWindow::updateSpreadSheet()
+{
+    for (int i = 0; i < ui->tableWidget->rowCount(); i++)
+    {
+        QString cellStr = ui->tableWidget->item(i, 0)->text();
+        chIn[i] = cellStr.toDouble();
+    }
 
+    engine->globalObject().setProperty("CH0", chIn[0]);
+    engine->globalObject().setProperty("CH1", chIn[1]);
+    engine->globalObject().setProperty("CH2", chIn[2]);
+    engine->globalObject().setProperty("CH3", chIn[3]);
+    engine->globalObject().setProperty("CH4", chIn[4]);
+    engine->globalObject().setProperty("CH5", chIn[5]);
+    engine->globalObject().setProperty("CH6", chIn[6]);
+    engine->globalObject().setProperty("CH7", chIn[7]);
+
+    for (int i = 0; i < ui->tableWidget->rowCount(); i++) //have to be started after full chIn[i] reading
+    {
+        QString cellStr = ui->tableWidget->item(i, 1)->text();
+        chOut[i] = computeFormula(cellStr);
+        qDebug() << chOut[i];
+        iCell = new QTableWidgetItem;
+        iCell->setText((QString::number(chOut[i])));
+        ui->tableWidget->setItem(i, 2, iCell);
+    }
+}
+
+double MainWindow::computeFormula(const QString str)
+{
+    double val = engine->evaluate(str).toNumber();
+    if (!std::isnan(val))
+    {
+        return val;
+    }
+    else
+    {
+        return 0;
+    }
+}
 void MainWindow::on_checkBoxCh0_clicked(bool checked)
 {
     if (checked)

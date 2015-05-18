@@ -5,6 +5,7 @@
 #include <QDebug>
 #include <QThread>
 #include <QTime>
+#include <QtScript>
 #include "qcustomplot.h"
 #include "serialreader.h"
 
@@ -29,22 +30,18 @@ private slots:
                       const vector<int> val);
 
     void refreshGraphs();
-    bool checkIfTriggered(const double valNew, const double valOld);
+    bool checkIfTriggered(const double valNew,
+                          const double valOld);
+    double computeFormula(const QString str);
+    void updateSpreadSheet();
 
     void on_checkBoxCh0_clicked(bool checked);
-
     void on_checkBoxCh1_clicked(bool checked);
-
     void on_checkBoxCh2_clicked(bool checked);
-
     void on_checkBoxCh3_clicked(bool checked);
-
     void on_checkBoxCh4_clicked(bool checked);
-
     void on_checkBoxCh5_clicked(bool checked);
-
     void on_checkBoxCh6_clicked(bool checked);
-
     void on_checkBoxCh7_clicked(bool checked);
 
 private:
@@ -54,6 +51,9 @@ private:
     double triggerLevel;
     bool fallingEdge, risingEdge;
     int triggerCh;
+    QScriptEngine  *engine;
+    std::vector<double> chIn, chOut;
+    QTableWidgetItem *iCell;
 
 };
 
