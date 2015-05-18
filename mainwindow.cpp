@@ -17,13 +17,14 @@ MainWindow::MainWindow(QWidget *parent) :
           0, 0, 0, 0};
     chOut = {0, 0, 0, 0,
           0, 0, 0, 0};
+    cellFormula = {"1", "1", "1", "1",
+          "1", "1", "1", "1"};
     engine = new QScriptEngine;
 }
 
 MainWindow::~MainWindow()
 {
     delete engine;
-    delete iCell;
     delete ui;
 }
 void MainWindow::setupPlot()
@@ -58,6 +59,7 @@ void MainWindow::setupPlot()
 
 void MainWindow::on_pushButton_2_clicked()
 {
+    getFormulas();
 
     if(!(myBufEmiter->isStarted()))
     {
@@ -91,23 +93,30 @@ void MainWindow::updateGraphsData(const vector<double> t,
         if ((myBufEmiter->activeCh) & (1 << i))
         {
             double valD = static_cast<double> (val[i]);
+            chIn[i] = valD;
+
             iCell = new QTableWidgetItem;
             iCell->setText((QString::number(valD))); // fill the spreadsheet
             ui->tableWidget->setItem(i, 0, iCell);
-            if (triggerEnabled && (triggerCh == i))
-            {
-                valNew = valD;
-                isTriggered = checkIfTriggered(valNew, valOld);
-                valOld = valNew;
-            }
-            ui->plot->graph(i)->addData(t[i], valD);
-            ui->plot->graph(i)->rescaleValueAxis();
-            ui->plot->xAxis->setRange(t[i]+0.25, 3, Qt::AlignRight);
+
+
         }
         //qDebug() << i << "  " << t[i] << "   " << valD << "  ";
 
     }
     updateSpreadSheet();
+    for (int i = 0; i < 8; i++)
+    {
+        if (triggerEnabled && (triggerCh == i))
+        {
+            valNew = chOut[i];
+            isTriggered = checkIfTriggered(valNew, valOld);
+            valOld = valNew;
+        }
+        ui->plot->graph(i)->addData(t[i], chOut[i]);
+        ui->plot->graph(i)->rescaleValueAxis();
+        ui->plot->xAxis->setRange(t[i]+0.1, 3, Qt::AlignRight);
+    }
 
     if (!triggerEnabled)
     {
@@ -149,11 +158,11 @@ bool MainWindow::checkIfTriggered(const double valNew, const double valOld)
 }
 void MainWindow::updateSpreadSheet()
 {
-    for (int i = 0; i < ui->tableWidget->rowCount(); i++)
+    /*for (int i = 0; i < ui->tableWidget->rowCount(); i++)
     {
         QString cellStr = ui->tableWidget->item(i, 0)->text();
         chIn[i] = cellStr.toDouble();
-    }
+    }*/
 
     engine->globalObject().setProperty("CH0", chIn[0]);
     engine->globalObject().setProperty("CH1", chIn[1]);
@@ -166,12 +175,25 @@ void MainWindow::updateSpreadSheet()
 
     for (int i = 0; i < ui->tableWidget->rowCount(); i++) //have to be started after full chIn[i] reading
     {
-        QString cellStr = ui->tableWidget->item(i, 1)->text();
-        chOut[i] = computeFormula(cellStr);
-        qDebug() << chOut[i];
+        chOut[i] = computeFormula(cellFormula[i]);
+        //qDebug() << chOut[i];
+    }
+}
+
+void MainWindow::refreshSpreadSheet()
+{
+    for (int i = 0; i < ui->tableWidget->rowCount(); i++)
+    {
         iCell = new QTableWidgetItem;
         iCell->setText((QString::number(chOut[i])));
         ui->tableWidget->setItem(i, 2, iCell);
+    }
+}
+void MainWindow::getFormulas()
+{
+    for (int i = 0; i < ui->tableWidget->rowCount(); i++) //have to be started after full chIn[i] reading
+    {
+        cellFormula[i] = ui->tableWidget->item(i, 1)->text();
     }
 }
 

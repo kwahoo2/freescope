@@ -22,8 +22,6 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    void setupPlot();
-
 private slots:
     void on_pushButton_2_clicked();
     void updateGraphsData(const vector<double> t,
@@ -51,6 +49,11 @@ private:
     double triggerLevel;
     bool fallingEdge, risingEdge;
     int triggerCh;
+    void setupPlot();
+    void setupSpreadSheet();
+    void refreshSpreadSheet();
+    void getFormulas();
+    vector <QString> cellFormula;
     QScriptEngine  *engine;
     std::vector<double> chIn, chOut;
     QTableWidgetItem *iCell;
