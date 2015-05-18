@@ -13,8 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
     triggerLevel = 0;
     fallingEdge = false;
     risingEdge = false;
-    timer = new QTimer(this);
-
+    //refreshTimer = new QTimer(this);
 }
 
 MainWindow::~MainWindow()
@@ -57,25 +56,18 @@ void MainWindow::on_pushButton_2_clicked()
     if(!(myBufEmiter->isStarted()))
     {
     myBufEmiter->readBuffer();
-    if (!triggerEnabled)
-    {
-        QObject::connect(timer, SIGNAL(timeout()), this, SLOT(refreshGraphs()));
-        timer->start(16); //60 fps update
-    }
     QObject::connect(myBufEmiter, SIGNAL(emitData(const vector <double>, //varaible time update
                                                      const vector<int>)),
                      this, SLOT(updateGraphsData(const vector<double>,
                                              const vector<int>)));
-        if (myBufEmiter->isStarted()) ui->pushButton_2->setText(tr("Started"));
+        ui->pushButton_2->setText(tr("Started"));
     }
     else
     {
         myBufEmiter->stopReadBuffer();
-        QObject::disconnect(timer, SIGNAL(timeout()), this, SLOT(refreshGraphs()));
-        timer->stop();
         QObject::disconnect(myBufEmiter, SIGNAL(emitData(const vector <double>,
                                                          const vector<int>)),
-                         this, SLOT(updateGraphs(const vector<double>,
+                         this, SLOT(updateGraphsData(const vector<double>,
                                                  const vector<int>)));
         ui->pushButton_2->setText(tr("Stopped"));
     }
@@ -87,6 +79,7 @@ void MainWindow::updateGraphsData(const vector<double> t,
 {
     double valNew = 0;
     double valOld = 0;
+    bool isTriggered = false;
     for (int i = 0; i < 8; i++)
     {
         if ((myBufEmiter->activeCh) & (1 << i))
@@ -95,7 +88,7 @@ void MainWindow::updateGraphsData(const vector<double> t,
             if (triggerEnabled && (triggerCh == i))
             {
                 valNew = valD;
-                checkIfTriggered(valNew, valOld);
+                isTriggered = checkIfTriggered(valNew, valOld);
                 valOld = valNew;
             }
             ui->plot->graph(i)->addData(t[i], valD);
@@ -105,6 +98,19 @@ void MainWindow::updateGraphsData(const vector<double> t,
         //qDebug() << i << "  " << t[i] << "   " << valD << "  ";
 
     }
+    if (!triggerEnabled)
+    {
+        refreshGraphs();
+    }
+    else
+    {
+        if (isTriggered)
+        {
+            refreshGraphs();
+        }
+    }
+
+
 }
 
 void MainWindow::refreshGraphs()
@@ -112,23 +118,23 @@ void MainWindow::refreshGraphs()
     ui->plot->replot();
 }
 
-void MainWindow::checkIfTriggered(const double valNew, const double valOld)
+bool MainWindow::checkIfTriggered(const double valNew, const double valOld)
 {
     if (risingEdge)
     {
         if ((triggerLevel < valNew) && (triggerLevel > valOld))
         {
-            this->refreshGraphs();
+            return true;
         }
     }
     if (fallingEdge)
     {
         if ((triggerLevel < valOld) && (triggerLevel > valNew))
         {
-            this->refreshGraphs();
+            return true;
         }
     }
-
+    return false;
 }
 
 void MainWindow::on_checkBoxCh0_clicked(bool checked)

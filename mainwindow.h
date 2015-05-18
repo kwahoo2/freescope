@@ -29,7 +29,7 @@ private slots:
                       const vector<int> val);
 
     void refreshGraphs();
-    void checkIfTriggered(const double valNew, const double valOld);
+    bool checkIfTriggered(const double valNew, const double valOld);
 
     void on_checkBoxCh0_clicked(bool checked);
 
@@ -50,7 +50,6 @@ private slots:
 private:
     Ui::MainWindow *ui;
     BufEmiter *myBufEmiter;
-    QTimer *timer;
     bool triggerEnabled;
     double triggerLevel;
     bool fallingEdge, risingEdge;

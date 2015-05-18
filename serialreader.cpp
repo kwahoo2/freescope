@@ -4,11 +4,12 @@ SerialReader::SerialReader(QObject *parent) :
     QObject(parent)
 {
     dataBuf.reserve(bufsize);
+    serial = new QSerialPort(this);
 }
 
 void SerialReader::openSerial()
 {
-    serial = new QSerialPort(this);
+
     serial->setBaudRate(57600);
     serial->setParity(QSerialPort::NoParity);
     serial->setStopBits(QSerialPort::OneStop);
@@ -151,8 +152,7 @@ void BufEmiter::readBuffer()
     if (mySerialReader->isOpened())
     {
         connect(timer, SIGNAL(timeout()), this, SLOT(updateGraph()));
-        timer->start(16); //60 fps update
-
+        timer->start(16);//TODO variable time update
         clock_gettime(CLOCK_MONOTONIC, &start);
         started = true;
     }
