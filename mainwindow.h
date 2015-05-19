@@ -49,6 +49,7 @@ private:
     double triggerLevel;
     bool fallingEdge, risingEdge;
     int triggerCh;
+    double baseTime;
     void setupPlot();
     void setupSpreadSheet();
     void refreshSpreadSheet();

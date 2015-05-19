@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
     triggerLevel = 0;
     fallingEdge = false;
     risingEdge = false;
+    baseTime = 3000;
     chIn = {0, 0, 0, 0,
           0, 0, 0, 0};
     chOut = {0, 0, 0, 0,
@@ -60,6 +61,10 @@ void MainWindow::setupPlot()
 void MainWindow::on_pushButton_2_clicked()
 {
     getFormulas();
+    int plotWidth = ui->plot->size().width();
+    baseTime = ui->baseTimeSpinBox->value();
+    qDebug() << (baseTime/plotWidth);
+    myBufEmiter->setAddInterval(plotWidth / baseTime);
 
     if(!(myBufEmiter->isStarted()))
     {
@@ -99,9 +104,9 @@ void MainWindow::updateGraphsData(const vector<double> t,
             iCell->setText((QString::number(valD))); // fill the spreadsheet
             ui->tableWidget->setItem(i, 0, iCell);
 
-
-        }
         //qDebug() << i << "  " << t[i] << "   " << valD << "  ";
+        }
+
 
     }
     updateSpreadSheet();
@@ -115,7 +120,8 @@ void MainWindow::updateGraphsData(const vector<double> t,
         }
         ui->plot->graph(i)->addData(t[i], chOut[i]);
         ui->plot->graph(i)->rescaleValueAxis();
-        ui->plot->xAxis->setRange(t[i]+0.1, 3, Qt::AlignRight);
+        qDebug() << i << " " << t[i] << " " <<chOut[i];
+        ui->plot->xAxis->setRange(t[i], baseTime/1000, Qt::AlignRight);
     }
 
     if (!triggerEnabled)

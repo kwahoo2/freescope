@@ -76,6 +76,7 @@ signals:
 private:
     bool stop;
     bool started;
+    int addInterval;
     ~BufEmiter();
     SerialReader *mySerialReader;
     SerialReader::dataItem data, data2; //structure from inside class
@@ -88,6 +89,7 @@ public slots:
     void stopReadBuffer();
     void enableCh(const int val);
     void disableCh(const int val);
+    void setAddInterval(const double interval);
 
 private slots:
     SerialReader::dataItem findData(const double t, const qint8 id);

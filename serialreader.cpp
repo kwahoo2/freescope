@@ -139,6 +139,7 @@ BufEmiter::BufEmiter(QObject *parent) :
     QObject(parent)
 {
     activeCh = 0xFF;
+    addInterval = 16;
     mySerialReader = new SerialReader(this);
     timer = new QTimer(this);
     started = false;
@@ -152,7 +153,7 @@ void BufEmiter::readBuffer()
     if (mySerialReader->isOpened())
     {
         connect(timer, SIGNAL(timeout()), this, SLOT(updateGraph()));
-        timer->start(16);//TODO variable time update
+        timer->start(addInterval);//variable time update
         clock_gettime(CLOCK_MONOTONIC, &start);
         started = true;
     }
@@ -189,6 +190,7 @@ SerialReader::dataItem BufEmiter::findData(const double t, const qint8 id)
 {
 
     SerialReader::dataItem tmpdata;
+    int fails = 0;
     long iBuf = mySerialReader->eBufCounter; //get start position
     while (1)
     {
@@ -202,6 +204,12 @@ SerialReader::dataItem BufEmiter::findData(const double t, const qint8 id)
 
                 return tmpdata;
             }
+        }
+        else
+        {
+            if (fails > 100) return tmpdata; //avoid infinite loop
+            //qDebug() << fails;
+            fails++;
         }
         iBuf++;
         if (iBuf > (mySerialReader->bufsize)) iBuf = 0; //circular buffer
@@ -231,6 +239,12 @@ void BufEmiter::disableCh(const int val)
 bool BufEmiter::isStarted()
 {
     return started;
+}
+
+void BufEmiter::setAddInterval(const double interval)
+{
+    addInterval = static_cast<int>(interval); //timer accept only ints
+    if (addInterval == 0) addInterval = 1;
 }
 
 BufEmiter::~BufEmiter()
