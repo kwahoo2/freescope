@@ -153,8 +153,8 @@ void BufEmiter::readBuffer()
     if (mySerialReader->isOpened())
     {
         connect(timer, SIGNAL(timeout()), this, SLOT(updateGraph()));
-        timer->start(addInterval);//variable time update
         clock_gettime(CLOCK_MONOTONIC, &start);
+        timer->start(addInterval);//variable time update
         started = true;
     }
     else

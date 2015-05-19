@@ -14,6 +14,7 @@ MainWindow::MainWindow(QWidget *parent) :
     fallingEdge = false;
     risingEdge = false;
     baseTime = 3000;
+    refreshCycle = 0;
     chIn = {0, 0, 0, 0,
           0, 0, 0, 0};
     chOut = {0, 0, 0, 0,
@@ -119,9 +120,9 @@ void MainWindow::updateGraphsData(const vector<double> t,
             valOld = valNew;
         }
         ui->plot->graph(i)->addData(t[i], chOut[i]);
-        ui->plot->graph(i)->rescaleValueAxis();
-        qDebug() << i << " " << t[i] << " " <<chOut[i];
+        //qDebug() << i << " " << t[i] << " " <<chOut[i];
         ui->plot->xAxis->setRange(t[i], baseTime/1000, Qt::AlignRight);
+        ui->plot->graph(i)->rescaleValueAxis();
     }
 
     if (!triggerEnabled)
@@ -143,7 +144,12 @@ void MainWindow::updateGraphsData(const vector<double> t,
 
 void MainWindow::refreshGraphs()
 {
-    ui->plot->replot();
+    if ((16 / baseTime) < refreshCycle) //16 ms = 60 fps
+    {
+        refreshCycle = 0;
+        ui->plot->replot();
+    }
+    refreshCycle++;
 }
 
 bool MainWindow::checkIfTriggered(const double valNew, const double valOld)
@@ -190,12 +196,11 @@ void MainWindow::updateSpreadSheet()
 
 void MainWindow::refreshSpreadSheet()
 {
-    for (int i = 0; i < ui->tableWidget->rowCount(); i++)
+    if ((16 / baseTime) < refreshCycle) //16 ms = 60 fps
     {
-        iCell = new QTableWidgetItem;
-        iCell->setText((QString::number(chOut[i])));
-        ui->tableWidget->setItem(i, 2, iCell);
+        refreshCycle = 0;
     }
+    refreshCycle++;
 }
 void MainWindow::getFormulas()
 {

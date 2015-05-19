@@ -58,6 +58,7 @@ private:
     QScriptEngine  *engine;
     std::vector<double> chIn, chOut;
     QTableWidgetItem *iCell;
+    int refreshCycle;
 
 };
 
