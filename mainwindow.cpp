@@ -13,6 +13,8 @@ MainWindow::MainWindow(QWidget *parent) :
     triggerLevel = 0;
     fallingEdge = false;
     risingEdge = false;
+    minYRange = 0;
+    maxYRange = 5;
     baseTime = 3000;
     refreshCycle = 0;
     chIn = {0, 0, 0, 0,
@@ -55,6 +57,7 @@ void MainWindow::setupPlot()
 
     ui->plot->xAxis->setLabel("t");
     ui->plot->yAxis->setLabel("V");
+    ui->plot->yAxis->setRange(minYRange, maxYRange);
 
 }
 
@@ -124,7 +127,7 @@ void MainWindow::updateGraphsData(const vector<double> t,
             ui->plot->graph(i)->addData(t[i], chOut[i]);
             //qDebug() << i << " " << t[i] << " " <<chOut[i];
             ui->plot->xAxis->setRange(t[i], baseTime/1000, Qt::AlignRight);
-            ui->plot->graph(i)->rescaleValueAxis();
+            //ui->plot->graph(i)->rescaleValueAxis();
         }
     }
 
@@ -319,4 +322,18 @@ void MainWindow::on_checkBoxCh7_clicked(bool checked)
     {
         myBufEmiter->disableCh(7);
     }
+}
+
+void MainWindow::on_maxSpinBox_valueChanged(double arg1)
+{
+    maxYRange = arg1;
+    ui->plot->yAxis->setRange(minYRange, maxYRange);
+    ui->plot->replot();
+}
+
+void MainWindow::on_minSpinBox_valueChanged(double arg1)
+{
+    minYRange = arg1;
+    ui->plot->yAxis->setRange(minYRange, maxYRange);
+    ui->plot->replot();
 }

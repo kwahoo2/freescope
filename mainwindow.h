@@ -42,12 +42,17 @@ private slots:
     void on_checkBoxCh6_clicked(bool checked);
     void on_checkBoxCh7_clicked(bool checked);
 
+    void on_maxSpinBox_valueChanged(double arg1);
+
+    void on_minSpinBox_valueChanged(double arg1);
+
 private:
     Ui::MainWindow *ui;
     BufEmiter *myBufEmiter;
     bool triggerEnabled;
     double triggerLevel;
     bool fallingEdge, risingEdge;
+    double minYRange, maxYRange;
     int triggerCh;
     double baseTime;
     void setupPlot();
