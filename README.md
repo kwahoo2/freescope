@@ -11,5 +11,5 @@ First testing version, missing features, may not work properly.
 -QT (PC) visulalisation application
 
 
-FreeScope used to monitor 3-phase motor used as generator/encoder  http://imgur.com/ZV0FTbD
+FreeScope used to monitor 3-phase motor used as generator/encoder  http://i.imgur.com/LJnpSrv.png
 

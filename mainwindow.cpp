@@ -10,9 +10,11 @@ MainWindow::MainWindow(QWidget *parent) :
     setupPlot();
     triggerEnabled =  false;
     triggerCh = 0;
-    triggerLevel = 0;
+    triggerLevel = ui->triggerSpinBox->value();
     fallingEdge = false;
     risingEdge = false;
+    valNew = 0;
+    valOld = 0;
     minYRange = 0;
     maxYRange = 5;
     baseTime = 3000;
@@ -24,6 +26,12 @@ MainWindow::MainWindow(QWidget *parent) :
     cellFormula = {"1", "1", "1", "1",
           "1", "1", "1", "1"};
     engine = new QScriptEngine;
+
+    for (int i = 0; i < 8; i++)
+    {
+        ui->triggerComboBox->addItem("Channel "+QString::number(i));
+    }
+
 }
 
 MainWindow::~MainWindow()
@@ -64,6 +72,10 @@ void MainWindow::setupPlot()
 
 void MainWindow::on_pushButton_2_clicked()
 {
+    for (int i = 0; i < 8; i++)
+    {
+        ui->plot->graph(1)->clearData();
+    }
     getFormulas();
     int plotWidth = ui->plot->size().width();
     baseTime = ui->baseTimeSpinBox->value();
@@ -94,8 +106,6 @@ void MainWindow::on_pushButton_2_clicked()
 void MainWindow::updateGraphsData(const vector<double> t,
                               const vector<int> val)
 {
-    double valNew = 0;
-    double valOld = 0;
     bool isTriggered = false;
     for (int i = 0; i < 8; i++)
     {
@@ -121,6 +131,7 @@ void MainWindow::updateGraphsData(const vector<double> t,
             if (triggerEnabled && (triggerCh == i))
             {
                 valNew = chOut[i];
+                //qDebug() << "trig" << valNew <<" " << valOld;
                 isTriggered = checkIfTriggered(valNew, valOld);
                 valOld = valNew;
             }
@@ -160,16 +171,16 @@ void MainWindow::refreshGraphs()
 
 bool MainWindow::checkIfTriggered(const double valNew, const double valOld)
 {
-    if (risingEdge)
+    if (fallingEdge)
     {
-        if ((triggerLevel < valNew) && (triggerLevel > valOld))
+        if ((triggerLevel < valOld) && (triggerLevel > valNew))
         {
             return true;
         }
     }
-    if (fallingEdge)
+    if (risingEdge)
     {
-        if ((triggerLevel < valOld) && (triggerLevel > valNew))
+        if ((triggerLevel < valNew) && (triggerLevel > valOld))
         {
             return true;
         }
@@ -341,4 +352,35 @@ void MainWindow::on_minSpinBox_valueChanged(double arg1)
     minYRange = arg1;
     ui->plot->yAxis->setRange(minYRange, maxYRange);
     ui->plot->replot();
+}
+
+void MainWindow::on_triggerCheckBox_clicked(bool checked)
+{
+    triggerEnabled = checked;
+}
+
+void MainWindow::on_risingCheckBox_clicked(bool checked)
+{
+    risingEdge = checked;
+}
+
+void MainWindow::on_fallingCheckBox_clicked(bool checked)
+{
+    fallingEdge = checked;
+}
+
+void MainWindow::on_triggerComboBox_currentIndexChanged(int index)
+{
+    qDebug() << index;
+    triggerCh = index;
+}
+
+void MainWindow::on_triggerSpinBox_valueChanged(double arg1)
+{
+    triggerLevel = arg1;
+}
+
+void MainWindow::on_baseTimeSpinBox_valueChanged(double arg1)
+{
+    baseTime = arg1;
 }

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>626</width>
-    <height>487</height>
+    <width>647</width>
+    <height>531</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -145,13 +145,6 @@
              </widget>
             </item>
             <item>
-             <widget class="QComboBox" name="triggerComboBox">
-              <property name="modelColumn">
-               <number>3</number>
-              </property>
-             </widget>
-            </item>
-            <item>
              <widget class="QDoubleSpinBox" name="maxSpinBox">
               <property name="minimum">
                <double>-100.000000000000000</double>
@@ -183,7 +176,83 @@
               </property>
              </widget>
             </item>
+            <item>
+             <spacer name="verticalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
            </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <property name="spacing">
+           <number>6</number>
+          </property>
+          <property name="sizeConstraint">
+           <enum>QLayout::SetDefaultConstraint</enum>
+          </property>
+          <item>
+           <widget class="QCheckBox" name="triggerCheckBox">
+            <property name="text">
+             <string>Triggering</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="triggerComboBox"/>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="risingCheckBox">
+            <property name="text">
+             <string>On Rising</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="fallingCheckBox">
+            <property name="text">
+             <string>On Falling</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="triggerSpinBox">
+            <property name="minimum">
+             <double>-100.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>100.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.100000000000000</double>
+            </property>
+            <property name="value">
+             <double>2.500000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>
@@ -374,7 +443,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>626</width>
+     <width>647</width>
      <height>25</height>
     </rect>
    </property>

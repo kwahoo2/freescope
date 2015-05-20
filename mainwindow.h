@@ -46,12 +46,25 @@ private slots:
 
     void on_minSpinBox_valueChanged(double arg1);
 
+    void on_triggerCheckBox_clicked(bool checked);
+
+    void on_risingCheckBox_clicked(bool checked);
+
+    void on_fallingCheckBox_clicked(bool checked);
+
+    void on_triggerComboBox_currentIndexChanged(int index);
+
+    void on_triggerSpinBox_valueChanged(double arg1);
+
+    void on_baseTimeSpinBox_valueChanged(double arg1);
+
 private:
     Ui::MainWindow *ui;
     BufEmiter *myBufEmiter;
     bool triggerEnabled;
     double triggerLevel;
     bool fallingEdge, risingEdge;
+    double valOld, valNew;
     double minYRange, maxYRange;
     int triggerCh;
     double baseTime;
