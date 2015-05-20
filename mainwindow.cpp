@@ -113,16 +113,19 @@ void MainWindow::updateGraphsData(const vector<double> t,
     updateSpreadSheet();
     for (int i = 0; i < 8; i++)
     {
-        if (triggerEnabled && (triggerCh == i))
+        if (myBufEmiter->activeCh & (1 << i))
         {
-            valNew = chOut[i];
-            isTriggered = checkIfTriggered(valNew, valOld);
-            valOld = valNew;
+            if (triggerEnabled && (triggerCh == i))
+            {
+                valNew = chOut[i];
+                isTriggered = checkIfTriggered(valNew, valOld);
+                valOld = valNew;
+            }
+            ui->plot->graph(i)->addData(t[i], chOut[i]);
+            //qDebug() << i << " " << t[i] << " " <<chOut[i];
+            ui->plot->xAxis->setRange(t[i], baseTime/1000, Qt::AlignRight);
+            ui->plot->graph(i)->rescaleValueAxis();
         }
-        ui->plot->graph(i)->addData(t[i], chOut[i]);
-        //qDebug() << i << " " << t[i] << " " <<chOut[i];
-        ui->plot->xAxis->setRange(t[i], baseTime/1000, Qt::AlignRight);
-        ui->plot->graph(i)->rescaleValueAxis();
     }
 
     if (!triggerEnabled)
