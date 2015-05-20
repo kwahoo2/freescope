@@ -204,9 +204,14 @@ void MainWindow::refreshSpreadSheet()
 {
     if ((16 / baseTime) < refreshCycle) //16 ms = 60 fps
     {
-        refreshCycle = 0;
+        for (int i = 0; i < 8; i++)
+        {
+            iCell = new QTableWidgetItem;
+            iCell->setText((QString::number(chOut[i])));
+            ui->tableWidget->setItem(i, 2, iCell);
+        }
     }
-    refreshCycle++;
+
 }
 void MainWindow::getFormulas()
 {
