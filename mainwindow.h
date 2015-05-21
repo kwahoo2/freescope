@@ -24,14 +24,15 @@ public:
 
 private slots:
     void on_pushButton_2_clicked();
-    void updateGraphsData(const vector<double> t,
-                      const vector<int> val);
+    void updateGraphsData(const int idx,
+                          const double t,
+                          const int val);
 
     void refreshGraphs();
     bool checkIfTriggered(const double valNew,
                           const double valOld);
     double computeFormula(const QString str);
-    void updateSpreadSheet();
+    void refreshSpreadSheet();
 
     void on_checkBoxCh0_clicked(bool checked);
     void on_checkBoxCh1_clicked(bool checked);
@@ -41,26 +42,19 @@ private slots:
     void on_checkBoxCh5_clicked(bool checked);
     void on_checkBoxCh6_clicked(bool checked);
     void on_checkBoxCh7_clicked(bool checked);
-
     void on_maxSpinBox_valueChanged(double arg1);
-
     void on_minSpinBox_valueChanged(double arg1);
-
     void on_triggerCheckBox_clicked(bool checked);
-
     void on_risingCheckBox_clicked(bool checked);
-
     void on_fallingCheckBox_clicked(bool checked);
-
     void on_triggerComboBox_currentIndexChanged(int index);
-
     void on_triggerSpinBox_valueChanged(double arg1);
-
     void on_baseTimeSpinBox_valueChanged(double arg1);
 
 private:
     Ui::MainWindow *ui;
     BufEmiter *myBufEmiter;
+    QTimer *timer;
     bool triggerEnabled;
     double triggerLevel;
     bool fallingEdge, risingEdge;
@@ -70,13 +64,11 @@ private:
     double baseTime;
     void setupPlot();
     void setupSpreadSheet();
-    void refreshSpreadSheet();
     void getFormulas();
     vector <QString> cellFormula;
     QScriptEngine  *engine;
     std::vector<double> chIn, chOut;
     QTableWidgetItem *iCell;
-    int refreshCycle;
 
 };
 

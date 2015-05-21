@@ -1,7 +1,6 @@
 #include "serialreader.h"
 
-SerialReader::SerialReader(QObject *parent) :
-    QObject(parent)
+SerialReader::SerialReader()
 {
     dataBuf.reserve(bufsize);
     serial = new QSerialPort(this);
@@ -66,7 +65,7 @@ void SerialReader::readSerial()
                 quint8 tmp = serialBuffer[i];
                 quint8 tmp2 = serialBuffer[i+1];
                 data = (tmp << 7 | tmp2); //move only for 7 places to fill bit 7  in the second byte
-                //qDebug() << "TMP " << tmp << "TMP2 " << tmp2 << "DATA " <<data;
+                qDebug() << "TMP " << tmp << "TMP2 " << tmp2 << "DATA " <<data;
                 /*last 16 bits
                  * 15 0
                  * 14 1
@@ -138,10 +137,11 @@ bool SerialReader::isOpened()
 BufEmiter::BufEmiter(QObject *parent) :
     QObject(parent)
 {
+    serThread = new QThread;
     activeCh = 0xFF;
     addInterval = 16;
-    mySerialReader = new SerialReader(this);
-    timer = new QTimer(this);
+    mySerialReader = new SerialReader();
+    mySerialReader->moveToThread(serThread);
     started = false;
 }
 
@@ -152,74 +152,49 @@ void BufEmiter::readBuffer()
     mySerialReader->openSerial(); //thread reading serial
     if (mySerialReader->isOpened())
     {
-        connect(timer, SIGNAL(timeout()), this, SLOT(updateGraph()));
-        clock_gettime(CLOCK_MONOTONIC, &start);
-        timer->start(addInterval);//variable time update
         started = true;
+        serThread->start();
+        updateGraph();
     }
     else
     {
+        serThread->exit();
         started = false;
     }
 }
 
 void BufEmiter::updateGraph()
 {
-    clock_gettime(CLOCK_MONOTONIC, &end);
-    double actTime = (double)(end.tv_sec - start.tv_sec) + (double)(end.tv_nsec - start.tv_nsec) / 1.0e9;
+    SerialReader::dataItem data, dataold;
+    dataold.readId = 0; dataold.readTime = 0.0; dataold.readVal = 0;
+    //long iBuf = mySerialReader->eBufCounter; //get start position
+    long iBuf = 0;
 
-    vector<double> rTime(8);
-    vector<int> rVal(8);
-
-    for (int id = 0; id < 8; id++)
+    while (!stop)
     {
-        if (activeCh & (1 << id))
+        data = mySerialReader->readBufAt(iBuf);
+                    qDebug() << data.readTime << " " <<iBuf;
+        if (data.readTime > dataold.readTime)
         {
-            data = findData(actTime, id); //1 external test, 2 potentiomer test
-            rTime[id] = data.readTime;
-            rVal[id] = data.readVal;
-        }
+            int id = data.readId;
+            double t = data.readTime;
+            int val = data.readVal;
+            if (activeCh & (1 << id)) emit emitData(id, t, val);
 
-    }
-
-    emit emitData(rTime,
-                  rVal);
-}
-
-SerialReader::dataItem BufEmiter::findData(const double t, const qint8 id)
-{
-
-    SerialReader::dataItem tmpdata;
-    int fails = 0;
-    long iBuf = mySerialReader->eBufCounter; //get start position
-    while (1)
-    {
-        tmpdata = mySerialReader->readBufAt(iBuf);
-
-        if (id == tmpdata.readId)
-        {
-            if (t > tmpdata.readTime)
-            {
-                //qDebug() << "t " << t << "readtime " <<tmpdata.readTime << "iBuf " << iBuf;
-
-                return tmpdata;
-            }
+            QThread::usleep(1000);
         }
         else
         {
-            if (fails > 100) return tmpdata; //avoid infinite loop
-            //qDebug() << fails;
-            fails++;
+            iBuf++;
+            QThread::usleep(200);
         }
-        iBuf++;
+        dataold = data;
         if (iBuf > (mySerialReader->bufsize)) iBuf = 0; //circular buffer
     }
 }
 
 void BufEmiter::stopReadBuffer()
 {
-    disconnect(timer, SIGNAL(timeout()), this, SLOT(updateGraph()));
-    timer->stop();
     mySerialReader->closeSerial();
     started = false;
 }
@@ -241,14 +216,9 @@ bool BufEmiter::isStarted()
     return started;
 }
 
-void BufEmiter::setAddInterval(const double interval)
-{
-    addInterval = static_cast<int>(interval); //timer accept only ints
-    if (addInterval == 0) addInterval = 1;
-}
-
 BufEmiter::~BufEmiter()
 {
     mySerialReader->closeSerial();
+    //delete mySerialReader;
 }
 

@@ -18,7 +18,6 @@ MainWindow::MainWindow(QWidget *parent) :
     minYRange = 0;
     maxYRange = 5;
     baseTime = 3000;
-    refreshCycle = 0;
     chIn = {0, 0, 0, 0,
           0, 0, 0, 0};
     chOut = {0, 0, 0, 0,
@@ -31,6 +30,11 @@ MainWindow::MainWindow(QWidget *parent) :
     {
         ui->triggerComboBox->addItem("Channel "+QString::number(i));
     }
+    timer = new QTimer(this);
+    QObject::connect(timer, SIGNAL(timeout()),
+                     this, SLOT(refreshGraphs()));
+    QObject::connect(timer, SIGNAL(timeout()),
+                     this, SLOT(refreshSpreadSheet()));
 
 }
 
@@ -80,74 +84,65 @@ void MainWindow::on_pushButton_2_clicked()
     int plotWidth = ui->plot->size().width();
     baseTime = ui->baseTimeSpinBox->value();
     qDebug() << (baseTime/plotWidth);
-    myBufEmiter->setAddInterval(plotWidth / baseTime);
 
     if(!(myBufEmiter->isStarted()))
     {
-    myBufEmiter->readBuffer();
-    QObject::connect(myBufEmiter, SIGNAL(emitData(const vector <double>, //varaible time update
-                                                     const vector<int>)),
-                     this, SLOT(updateGraphsData(const vector<double>,
-                                             const vector<int>)));
+        myBufEmiter->readBuffer();
+        QObject::connect(myBufEmiter, SIGNAL(emitData(const int, //varaible time update
+                                                      const double,
+                                                      const int)),
+                     this, SLOT(updateGraphsData(const int,
+                                                 const double,
+                                                 const int)));
         ui->pushButton_2->setText(tr("Started"));
     }
     else
     {
         myBufEmiter->stopReadBuffer();
-        QObject::disconnect(myBufEmiter, SIGNAL(emitData(const vector <double>,
-                                                         const vector<int>)),
-                         this, SLOT(updateGraphsData(const vector<double>,
-                                                 const vector<int>)));
+        QObject::disconnect(myBufEmiter, SIGNAL(emitData(const int, //varaible time update
+                                                      const double,
+                                                      const int)),
+                     this, SLOT(updateGraphsData(const int,
+                                                 const double,
+                                                 const int)));
+        timer->stop();
         ui->pushButton_2->setText(tr("Stopped"));
     }
 
 }
 
-void MainWindow::updateGraphsData(const vector<double> t,
-                              const vector<int> val)
+void MainWindow::updateGraphsData(const int idx,
+                                  const double t,
+                                  const int val)
 {
     bool isTriggered = false;
-    for (int i = 0; i < 8; i++)
+    if ((myBufEmiter->activeCh) & (1 << idx))
     {
-        if ((myBufEmiter->activeCh) & (1 << i))
+        double valD = static_cast<double> (val);
+        chIn[idx] = valD;
+        iCell = new QTableWidgetItem;
+        iCell->setText((QString::number(valD))); // fill the spreadsheet
+        ui->tableWidget->setItem(idx, 0, iCell);
+    }
+    QString chStr = "CH"+QString::number(idx);
+    engine->globalObject().setProperty(chStr, chIn[0]);
+    chOut[idx] = computeFormula(cellFormula[idx]);
+
+    if (myBufEmiter->activeCh & (1 << idx))
+    {
+        if (triggerEnabled && (triggerCh == idx))
         {
-            double valD = static_cast<double> (val[i]);
-            chIn[i] = valD;
-
-            iCell = new QTableWidgetItem;
-            iCell->setText((QString::number(valD))); // fill the spreadsheet
-            ui->tableWidget->setItem(i, 0, iCell);
-
-        //qDebug() << i << "  " << t[i] << "   " << valD << "  ";
+            valNew = chOut[idx];
+            //qDebug() << "trig" << valNew <<" " << valOld;
+            isTriggered = checkIfTriggered(valNew, valOld);
+            valOld = valNew;
         }
-
-
-    }
-    updateSpreadSheet();
-    for (int i = 0; i < 8; i++)
-    {
-        if (myBufEmiter->activeCh & (1 << i))
-        {
-            if (triggerEnabled && (triggerCh == i))
-            {
-                valNew = chOut[i];
-                //qDebug() << "trig" << valNew <<" " << valOld;
-                isTriggered = checkIfTriggered(valNew, valOld);
-                valOld = valNew;
-            }
-            ui->plot->graph(i)->addData(t[i], chOut[i]);
-            //qDebug() << i << " " << t[i] << " " <<chOut[i];
-            ui->plot->xAxis->setRange(t[i], baseTime/1000, Qt::AlignRight);
-            //ui->plot->graph(i)->rescaleValueAxis();
-        }
+        ui->plot->graph(idx)->addData(t, chOut[idx]);
+        ui->plot->xAxis->setRange(t, baseTime/1000, Qt::AlignRight);
+        //ui->plot->graph(i)->rescaleValueAxis();
     }
 
-    if (!triggerEnabled)
-    {
-        refreshGraphs();
-        refreshSpreadSheet();
-    }
-    else
+    if (triggerEnabled)
     {
         if (isTriggered)
         {
@@ -155,18 +150,11 @@ void MainWindow::updateGraphsData(const vector<double> t,
             refreshSpreadSheet();
         }
     }
-
-
 }
 
 void MainWindow::refreshGraphs()
 {
-    if ((16 / baseTime) < refreshCycle) //16 ms = 60 fps
-    {
-        refreshCycle = 0;
-        ui->plot->replot();
-    }
-    refreshCycle++;
+    ui->plot->replot();
 }
 
 bool MainWindow::checkIfTriggered(const double valNew, const double valOld)
@@ -187,42 +175,15 @@ bool MainWindow::checkIfTriggered(const double valNew, const double valOld)
     }
     return false;
 }
-void MainWindow::updateSpreadSheet()
-{
-    /*for (int i = 0; i < ui->tableWidget->rowCount(); i++)
-    {
-        QString cellStr = ui->tableWidget->item(i, 0)->text();
-        chIn[i] = cellStr.toDouble();
-    }*/
-
-    engine->globalObject().setProperty("CH0", chIn[0]);
-    engine->globalObject().setProperty("CH1", chIn[1]);
-    engine->globalObject().setProperty("CH2", chIn[2]);
-    engine->globalObject().setProperty("CH3", chIn[3]);
-    engine->globalObject().setProperty("CH4", chIn[4]);
-    engine->globalObject().setProperty("CH5", chIn[5]);
-    engine->globalObject().setProperty("CH6", chIn[6]);
-    engine->globalObject().setProperty("CH7", chIn[7]);
-
-    for (int i = 0; i < ui->tableWidget->rowCount(); i++) //have to be started after full chIn[i] reading
-    {
-        chOut[i] = computeFormula(cellFormula[i]);
-        //qDebug() << chOut[i];
-    }
-}
 
 void MainWindow::refreshSpreadSheet()
 {
-    if ((16 / baseTime) < refreshCycle) //16 ms = 60 fps
+    for (int i = 0; i < 8; i++)
     {
-        for (int i = 0; i < 8; i++)
-        {
-            iCell = new QTableWidgetItem;
-            iCell->setText((QString::number(chOut[i])));
-            ui->tableWidget->setItem(i, 2, iCell);
-        }
+        iCell = new QTableWidgetItem;
+        iCell->setText((QString::number(chOut[i])));
+        ui->tableWidget->setItem(i, 2, iCell);
     }
-
 }
 void MainWindow::getFormulas()
 {
@@ -357,6 +318,14 @@ void MainWindow::on_minSpinBox_valueChanged(double arg1)
 void MainWindow::on_triggerCheckBox_clicked(bool checked)
 {
     triggerEnabled = checked;
+    if (checked)
+    {
+        timer->stop();
+    }
+    else
+    {
+        timer->start(16);
+    }
 }
 
 void MainWindow::on_risingCheckBox_clicked(bool checked)

@@ -16,7 +16,7 @@ class SerialReader : public QObject
 {
     Q_OBJECT
 public:
-    explicit SerialReader(QObject *parent = 0);
+    explicit SerialReader();
     static const long bufsize = 100000;  //big circular buffer size
     long eBufCounter; //earlier cycle buffer write pos
     bool isOpened();
@@ -70,8 +70,9 @@ public:
 protected:
 
 signals:
-    void emitData(const vector<double> time,
-               const vector<int> value);
+    void emitData(const int id,
+                  const double time,
+                  const int value);
 
 private:
     bool stop;
@@ -79,20 +80,15 @@ private:
     int addInterval;
     ~BufEmiter();
     SerialReader *mySerialReader;
-    SerialReader::dataItem data, data2; //structure from inside class
-    QMutex mutex;
-    QTimer *timer;
-    struct timespec start, end;
+    QThread *serThread;
 
 public slots:
     void readBuffer();
     void stopReadBuffer();
     void enableCh(const int val);
     void disableCh(const int val);
-    void setAddInterval(const double interval);
 
 private slots:
-    SerialReader::dataItem findData(const double t, const qint8 id);
     void updateGraph();
 
 };
