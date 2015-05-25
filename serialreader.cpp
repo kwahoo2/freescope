@@ -243,8 +243,8 @@ bool BufEmiter::isStarted()
 
 void BufEmiter::setAddInterval(const double interval)
 {
-    addInterval = static_cast<int>(interval); //timer accept only ints
-    if (addInterval == 0) addInterval = 1;
+    addInterval = static_cast<int>(interval); //timer accept only ints,
+    // A QTimer with a timeout interval of 0 will time out as soon as all the events in the window system's event queue have been processed.
 }
 
 BufEmiter::~BufEmiter()
