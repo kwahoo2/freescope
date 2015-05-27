@@ -20,6 +20,7 @@ public:
     static const long bufsize = 100000;  //big circular buffer size
     long eBufCounter; //earlier cycle buffer write pos
     bool isOpened();
+    void sendByte(const qint8);
     struct dataItem
     {
         quint16 readVal;
@@ -45,7 +46,7 @@ private:
     vector<dataItem> dataBuf;
 
 private slots:
-        void readSerial();
+    void readSerial();
 
 public slots:
     void openSerial();

@@ -14,7 +14,7 @@ void SerialReader::openSerial()
     serial->setParity(QSerialPort::NoParity);
     serial->setStopBits(QSerialPort::OneStop);
     serial->setPortName("/dev/ttyUSB0");
-    serial->open(QIODevice::ReadOnly);
+    serial->open(QIODevice::ReadWrite);
 
     t_s = 0;
     t_sum = 0;
@@ -30,6 +30,13 @@ void SerialReader::openSerial()
     clock_gettime(CLOCK_MONOTONIC, &start);
 
 
+}
+
+void SerialReader::sendByte(const qint8 val)
+{
+    char str[] = {static_cast<char>(val)};
+    serial->write(str, sizeof(str));
+    qDebug() << "Sended " << str;
 }
 
 void SerialReader::readSerial()
@@ -148,6 +155,7 @@ BufEmiter::BufEmiter(QObject *parent) :
 
 void BufEmiter::readBuffer()
 {
+    mySerialReader->sendByte(activeCh);
     mySerialReader->clearBuf();
     mySerialReader->openSerial(); //thread reading serial
     if (mySerialReader->isOpened())
@@ -228,12 +236,14 @@ void BufEmiter::enableCh(const int val)
 {
    activeCh |= (1 << val);
    qDebug() << "Channel " << val << "enabled";
+   mySerialReader->sendByte(activeCh);
 }
 
 void BufEmiter::disableCh(const int val)
 {
    activeCh &= ~(1 << val);
    qDebug() << "Channel " << val << "disabled";
+   mySerialReader->sendByte(activeCh);
 }
 
 bool BufEmiter::isStarted()

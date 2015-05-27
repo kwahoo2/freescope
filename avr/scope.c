@@ -9,13 +9,13 @@
 #define F_CPU 8000000UL
 #endif
 
-/* 9600 baud */
 #define BAUD 57600 //dla 57600 przy 8MHz i wiecej warto stosować U2X w UCSRA ze wzgledu na błąd
 //#define MYUBRR F_CPU/16/BAUD-1
 #define MYUBRR F_CPU/8/BAUD-1 //8 bo U2X
 
 volatile uint8_t adcnum = 0; //zaczynamy od pc0
 volatile uint8_t data[2];
+volatile uint8_t activech = 0xFF;
 
 //przerwanie z przetwornika ADC
 ISR(ADC_vect)                        
@@ -29,8 +29,15 @@ ADCH. Otherwise, ADCL must be read first, then ADCH.*/
     data[0] = data[0] | ((data[1] & 0b10000000) >> 7); //bit 7 przerzucony do data[0]
     data[0] = data[0] | ((adcnum & 0b00000111) << 4); //bity 6:4 maja byc id
     data[1] = data[1] & 0b01111111; // data[1]zawsze rozpoczynany 0
+    
     adcnum++;
     if (adcnum > 7) adcnum = 0;
+    
+    while (!(activech & (1 << adcnum)))
+    {
+        adcnum++; /*przeskocz dalej jesli kanału nie ma na liscie aktywnych*/
+        if (adcnum > 7) adcnum = 0;
+    }
 
     ADMUX = adcnum | (1<<REFS0); //REFS0 odniesienie do napiecia zasilanie
     ADCSRA = _BV(ADEN)|_BV(ADIE)|_BV(ADSC)|_BV(ADPS2)|_BV(ADPS1);
@@ -62,6 +69,16 @@ void USART_Transmit(uint8_t part)
     UDR = part;
 }
 
+void USART_TryReceive(void)
+{
+    if (UCSRA & (1<<RXC))
+    {
+        activech = UDR; /*odbierz aktywne kanały*/
+    }
+
+}
+
+
 int main(void)
 {
     //ADC
@@ -78,6 +95,7 @@ int main(void)
         { 
             USART_Transmit(data[d]);
         }
+        USART_TryReceive();
         sei();
     }	
     return 0;
