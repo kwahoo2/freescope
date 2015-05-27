@@ -5,6 +5,19 @@ SerialReader::SerialReader(QObject *parent) :
 {
     dataBuf.reserve(bufsize);
     serial = new QSerialPort(this);
+    serial->setPortName("/dev/ttyUSB0");
+}
+
+void SerialReader::refreshPorts()
+{
+    ports = QSerialPortInfo::availablePorts();
+}
+
+void SerialReader::setPort(const int val)
+{
+    QString portName = ports[val].portName();
+    serial->setPortName("/dev/"+portName); //linux only!
+    qDebug() << "Port set to " << serial->portName();
 }
 
 void SerialReader::openSerial()
@@ -13,7 +26,6 @@ void SerialReader::openSerial()
     serial->setBaudRate(57600);
     serial->setParity(QSerialPort::NoParity);
     serial->setStopBits(QSerialPort::OneStop);
-    serial->setPortName("/dev/ttyUSB0");
     serial->open(QIODevice::ReadWrite);
 
     t_s = 0;

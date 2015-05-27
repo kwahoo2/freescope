@@ -119,7 +119,7 @@
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_3">
             <item>
-             <widget class="QPushButton" name="pushButton_2">
+             <widget class="QPushButton" name="startButton">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -175,6 +175,9 @@
                <double>0.000000000000000</double>
               </property>
              </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="portsComboBox"/>
             </item>
             <item>
              <spacer name="verticalSpacer_2">

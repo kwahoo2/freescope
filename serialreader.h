@@ -8,6 +8,7 @@
 #include <QSerialPort>
 #include <QTimer>
 #include <ctime>
+#include <QSerialPortInfo>
 //#include <memory> //needed for RAII (unique_ptr)
 
 using namespace std;
@@ -27,6 +28,7 @@ public:
         double readTime;
         qint8 readId;
     };
+    QList <QSerialPortInfo> ports;
 
 protected:
 
@@ -53,6 +55,8 @@ public slots:
     void closeSerial();
     dataItem readBufAt(long val);
     void clearBuf();
+    void refreshPorts();
+    void setPort(const int val);
 
 };
 /*buffer emiter thread
@@ -67,6 +71,7 @@ public:
     explicit BufEmiter(QObject *parent = 0);
     bool isStarted();
     qint8 activeCh; //binary number representing active channels, used becasue future uC communication
+    SerialReader *mySerialReader;
 
 protected:
 
@@ -79,7 +84,6 @@ private:
     bool started;
     int addInterval;
     ~BufEmiter();
-    SerialReader *mySerialReader;
     SerialReader::dataItem data, data2; //structure from inside class
     QMutex mutex;
     QTimer *timer;

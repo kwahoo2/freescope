@@ -23,7 +23,7 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_pushButton_2_clicked();
+    void on_startButton_clicked();
     void updateGraphsData(const vector<double> t,
                       const vector<int> val);
 
@@ -57,6 +57,8 @@ private slots:
     void on_triggerSpinBox_valueChanged(double arg1);
 
     void on_baseTimeSpinBox_valueChanged(double arg1);
+
+    void on_portsComboBox_activated(int index);
 
 private:
     Ui::MainWindow *ui;

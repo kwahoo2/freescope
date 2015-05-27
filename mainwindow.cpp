@@ -32,6 +32,14 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->triggerComboBox->addItem("Channel "+QString::number(i));
     }
 
+    myBufEmiter->mySerialReader->refreshPorts();
+    for (QSerialPortInfo &port : myBufEmiter->mySerialReader->ports)
+    {
+        qDebug() << port.portName();
+        ui->portsComboBox->addItem(port.portName());
+    }
+    myBufEmiter->mySerialReader->setPort(ui->portsComboBox->currentIndex());
+
 }
 
 MainWindow::~MainWindow()
@@ -70,7 +78,7 @@ void MainWindow::setupPlot()
 }
 
 
-void MainWindow::on_pushButton_2_clicked()
+void MainWindow::on_startButton_clicked()
 {
     for (int i = 0; i < 8; i++)
     {
@@ -89,7 +97,8 @@ void MainWindow::on_pushButton_2_clicked()
                                                      const vector<int>)),
                      this, SLOT(updateGraphsData(const vector<double>,
                                              const vector<int>)));
-        ui->pushButton_2->setText(tr("Started"));
+        ui->startButton->setText(tr("Started"));
+        ui->portsComboBox->setDisabled(true);
     }
     else
     {
@@ -98,7 +107,8 @@ void MainWindow::on_pushButton_2_clicked()
                                                          const vector<int>)),
                          this, SLOT(updateGraphsData(const vector<double>,
                                                  const vector<int>)));
-        ui->pushButton_2->setText(tr("Stopped"));
+        ui->startButton->setText(tr("Stopped"));
+        ui->portsComboBox->setEnabled(true);
     }
 
 }
@@ -383,4 +393,9 @@ void MainWindow::on_triggerSpinBox_valueChanged(double arg1)
 void MainWindow::on_baseTimeSpinBox_valueChanged(double arg1)
 {
     baseTime = arg1;
+}
+
+void MainWindow::on_portsComboBox_activated(int index)
+{
+    myBufEmiter->mySerialReader->setPort(index);
 }
